@@ -3,14 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
     use HasRoles;
 
@@ -51,7 +53,7 @@ class User extends Authenticatable
     }
 
     // assign default role when it is created
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
@@ -60,6 +62,11 @@ class User extends Authenticatable
                 $user->role = 'client'; // Default role
             }
         });
+    }
+
+    public function command(): HasMany
+    {
+        return $this->hasMany(Command::class, 'client_id');
     }
 
 
