@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('command', function (Blueprint $table) {
+        Schema::create('commands', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             $table->enum('statut', ['en attente', 'en préparation', 'prête', 'payée'])->default('en attente');
             $table->string('total');
             $table -> foreignId('user_id')-> constrained('users')->onDelete("cascade");
-            $table -> foreignId("payment_id")->constrained('payment')-> onDelete("cascade");
+            $table -> foreignId("payment_id")->constrained('payments')-> onDelete("cascade");
 
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('command');
+        Schema::dropIfExists('commands');
     }
 };

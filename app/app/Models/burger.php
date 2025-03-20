@@ -11,8 +11,8 @@ class burger extends Model
     use HasFactory;
 
     protected $fillable = [
-        'nom',
-        'prix',
+        'name',
+        'price',
         'image',
         'description',
         'stock',

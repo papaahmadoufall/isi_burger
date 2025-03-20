@@ -9,6 +9,19 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: 'Dashboard',
         href: '/dashboard',
     },
+    {
+        title: 'Users',
+        href: '/dashboard/user',
+    },
+    {
+        title: 'Command',
+        href: '/dashboard/command',
+    },
+    {
+        title: 'Moyen de paiement',
+        href: '/dashboard/payment',
+    },
+
 ];
 </script>
 
