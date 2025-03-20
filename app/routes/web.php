@@ -31,13 +31,13 @@ Route::get('dashboard/burgers', function () {
     return Inertia::render('burgers/Burger');
 })->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
 
-Route::get('dashboard/burgers/add', function () {
-    return Inertia::render('Burgers/addBurger');
-})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
-
-Route::get('dashboard/burgers/list', function () {
-    return Inertia::render('Burgers/listBurger');
-})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
+//Route::get('dashboard/burgers/add', function () {
+//    return Inertia::render('Burgers/addBurger');
+//})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
+//
+//Route::get('dashboard/burgers/list', function () {
+//    return Inertia::render('Burgers/listBurger');
+//})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
 
 
 require __DIR__.'/settings.php';
