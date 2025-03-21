@@ -3,6 +3,7 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/burgers/Layout.vue';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -22,55 +23,70 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
-import { toTypedSchema } from '@vee-validate/zod';
+import { useForm as useVeeForm } from 'vee-validate';
 import * as z from 'zod';
 import ListBurger from "@/pages/burgers/listBurger.vue";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 // Schéma de validation utilisant Zod
-const formSchema = toTypedSchema(
-    z.object({
-        name: z.string().min(3, "Le nom est obligatoire").max(50, "Le nom est trop long"),
-        price: z.number().min(0, "Le prix doit être positif"),
-        stock: z.number().min(0, "Le stock doit être positif"),
-        description: z.string().optional(),
-        image: z.any().optional(), // Permet les fichiers
-    })
-);
+const validationSchema = {
+    name: (value: string) => {
+        if (!value) return 'Name is required';
+        if (value.length < 3) return 'Name must be at least 3 characters';
+        if (value.length > 50) return 'Name must be less than 50 characters';
+        return true;
+    },
+    price: (value: number) => {
+        if (!value) return 'Price is required';
+        if (value < 0) return 'Price must be positive';
+        return true;
+    },
+    stock: (value: number) => {
+        if (!value) return 'Stock is required';
+        if (value < 0) return 'Stock must be positive';
+        return true;
+    },
+    description: () => true,
+    image: (value: File | null) => {
+        if (!value) return 'Image is required';
+        return true;
+    }
+};
 
 // Initialisation des données du formulaire avec InertiaJS
-const form = useForm({
+const inertiaForm = useForm({
     name: '',        // Nom du burger
     price: 0,        // Prix du burger
     stock: 0,        // Stock disponible
     description: '', // Description optionnelle
-    image: null,     // Image (fichier) optionnelle
+    image: null as File | null,     // Image (fichier) optionnelle
 });
 
-const selectedFile = ref<File | null>(null); // Gestion du fichier sélectionné
+const { handleSubmit, errors, setFieldValue } = useVeeForm({
+    validationSchema
+});
 
 // Fonction de soumission
-const handleSubmit = () => {
+const onSubmit = handleSubmit((values) => {
     const formData = new FormData();
-    formData.append('name', form.name);
-    formData.append('price', form.price.toString());
-    formData.append('stock', form.stock.toString());
-    formData.append('description', form.description || '');
+    formData.append('name', inertiaForm.name);
+    formData.append('price', inertiaForm.price.toString());
+    formData.append('stock', inertiaForm.stock.toString());
+    formData.append('description', inertiaForm.description || '');
 
     // Ajouter le fichier image s'il est sélectionné
-    if (selectedFile.value) {
-        formData.append('image', selectedFile.value);
+    if (inertiaForm.image) {
+        formData.append('image', inertiaForm.image);
     }
 
-    form.post(route('storeBurger'), {
+    inertiaForm.post(route('storeBurger'), {
         onSuccess: () => {
             toast({
                 title: 'Succès',
-                description: `Burger "${form.name}" ajouté avec succès.`,
+                description: `Burger "${inertiaForm.name}" ajouté avec succès.`,
                 variant: 'success',
             });
-            form.reset(); // Réinitialiser les champs après succès
-            selectedFile.value = null; // Réinitialiser le fichier
+            inertiaForm.reset();
         },
         onError: () => {
             toast({
@@ -80,6 +96,14 @@ const handleSubmit = () => {
             });
         },
     });
+});
+
+const handleFileChange = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+        inertiaForm.image = target.files[0];
+        setFieldValue('image', target.files[0]);
+    }
 };
 </script>
 
@@ -89,7 +113,7 @@ const handleSubmit = () => {
 
         <SettingsLayout>
             <Dialog>
-                <DialogTrigger as-child>
+                <DialogTrigger asChild>
                     <Button variant="outline">Add burger</Button>
                 </DialogTrigger>
                 <DialogContent class="sm:max-w-[425px]">
@@ -99,7 +123,7 @@ const handleSubmit = () => {
                             Fill in the fields below to add a new burger.
                         </DialogDescription>
                     </DialogHeader>
-                    <form @submit.prevent="handleSubmit">
+                    <form @submit.prevent="onSubmit" class="space-y-4">
                         <!-- Nom du burger -->
                         <FormField name="name">
                             <FormItem>
@@ -108,12 +132,11 @@ const handleSubmit = () => {
                                     <Input
                                         type="text"
                                         placeholder="Name of the burger"
-                                        v-model="form.name"
+                                        v-model="inertiaForm.name"
+                                        @input="setFieldValue('name', $event.target.value)"
                                     />
                                 </FormControl>
-                                <FormMessage v-if="form.errors.name">
-                                    {{ form.errors.name }}
-                                </FormMessage>
+                                <FormMessage>{{ errors.name }}</FormMessage>
                             </FormItem>
                         </FormField>
 
@@ -126,12 +149,11 @@ const handleSubmit = () => {
                                         type="number"
                                         placeholder="Price"
                                         min="0"
-                                        v-model="form.price"
+                                        v-model="inertiaForm.price"
+                                        @input="setFieldValue('price', Number($event.target.value))"
                                     />
                                 </FormControl>
-                                <FormMessage v-if="form.errors.price">
-                                    {{ form.errors.price }}
-                                </FormMessage>
+                                <FormMessage>{{ errors.price }}</FormMessage>
                             </FormItem>
                         </FormField>
 
@@ -144,12 +166,11 @@ const handleSubmit = () => {
                                         type="number"
                                         placeholder="Stock"
                                         min="0"
-                                        v-model="form.stock"
+                                        v-model="inertiaForm.stock"
+                                        @input="setFieldValue('stock', Number($event.target.value))"
                                     />
                                 </FormControl>
-                                <FormMessage v-if="form.errors.stock">
-                                    {{ form.errors.stock }}
-                                </FormMessage>
+                                <FormMessage>{{ errors.stock }}</FormMessage>
                             </FormItem>
                         </FormField>
 
@@ -161,12 +182,11 @@ const handleSubmit = () => {
                                     <Input
                                         type="text"
                                         placeholder="Description"
-                                        v-model="form.description"
+                                        v-model="inertiaForm.description"
+                                        @input="setFieldValue('description', $event.target.value)"
                                     />
                                 </FormControl>
-                                <FormMessage v-if="form.errors.description">
-                                    {{ form.errors.description }}
-                                </FormMessage>
+                                <FormMessage>{{ errors.description }}</FormMessage>
                             </FormItem>
                         </FormField>
 
@@ -175,22 +195,20 @@ const handleSubmit = () => {
                             <FormItem>
                                 <FormLabel>Image</FormLabel>
                                 <FormControl>
-                                    <input
+                                    <Input
                                         type="file"
                                         accept="image/*"
-                                        class="block w-full mt-1 border border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                        @change="(e) => selectedFile.value = e.target.files?.[0] || null"
+                                        class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                                        @change="handleFileChange"
                                     />
                                 </FormControl>
-                                <FormMessage v-if="form.errors.image">
-                                    {{ form.errors.image }}
-                                </FormMessage>
+                                <FormMessage>{{ errors.image }}</FormMessage>
                             </FormItem>
                         </FormField>
 
                         <!-- Boutons -->
                         <DialogFooter>
-                            <Button variant="outline" type="button" @click="form.reset()">Cancel</Button>
+                            <Button variant="outline" type="button" @click="inertiaForm.reset()">Cancel</Button>
                             <Button type="submit">Save</Button>
                         </DialogFooter>
                     </form>

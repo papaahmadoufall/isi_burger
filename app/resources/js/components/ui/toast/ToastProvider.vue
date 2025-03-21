@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ToastProvider, type ToastProviderProps } from 'reka-ui'
-
-const props = defineProps<ToastProviderProps>()
+import { ToastProvider } from 'reka-ui'
 </script>
 
 <template>
-  <ToastProvider v-bind="props">
+  <ToastProvider class="fixed top-4 right-4 bottom-auto left-auto">
     <slot />
   </ToastProvider>
 </template>

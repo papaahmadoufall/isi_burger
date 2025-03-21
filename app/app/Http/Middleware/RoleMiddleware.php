@@ -14,11 +14,24 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, $role = null): Response
     {
-        // checking if it's the good role
-        if (Auth::user()->role == "client") {
-            return redirect()->route('home');
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        if ($role) {
+            $user = Auth::user();
+            // Check both the role column and Spatie roles
+            if ($user->role !== $role && !$user->hasRole($role)) {
+                if ($user->role === 'client' || $user->hasRole('client')) {
+                    return redirect()->route('shop');
+                }
+                if ($user->role === 'admin' || $user->hasRole('admin')) {
+                    return redirect()->route('dashboard');
+                }
+                return redirect()->route('login');
+            }
         }
 
         return $next($request);

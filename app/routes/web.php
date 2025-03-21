@@ -4,41 +4,83 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
 use Inertia\Inertia;
 use App\Http\Controllers\burgerController;
+use App\Http\Controllers\CommandController;
+use App\Http\Controllers\PaymentController;
 
-// Routes protégées avec "auth"
-
-    Route::get('/burgers', [burgerController::class, 'index']); // Accessible à tous les utilisateurs authentifiés
-    Route::get('/burgers/{id}', [burgerController::class, 'show']); // Accessible à tous les utilisateurs authentifiés
-
-    // Routes réservées aux administrateurs
-    Route::post('/burgers', [burgerController::class, 'store']) ->name("storeBurger"); // Créer un burger
-    Route::put('/burgers/{id}', [burgerController::class, 'update']); // Mettre à jour un burger
-    Route::delete('/burgers/{id}', [burgerController::class, 'destroy']); // Supprimer un burger
-
-
-
+// Public routes
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// Shop route - accessible to everyone but with different behavior when authenticated
+Route::get('/shop', function () {
+    return Inertia::render('shop/Shop', [
+        'isAuthenticated' => auth()->check(),
+        'userRole' => auth()->check() ? auth()->user()->role : null,
+        'canOrder' => auth()->check() && auth()->user()->hasRole('client'),
+    ]);
+})->name('shop');
 
+// Routes for authenticated users
+Route::middleware(['auth'])->group(function () {
+    // Public burger routes
+    Route::get('/burgers', [burgerController::class, 'index'])
+        ->name('burgers.index');
+    
+    Route::get('/burgers/{id}', [burgerController::class, 'show'])
+        ->name('burgers.show');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard');
+    // Client routes
+    Route::middleware('checkrole:client')->group(function () {
+        Route::post('/commands', [CommandController::class, 'store'])
+            ->name('commands.store');
+        
+        // Client can view their own commands
+        Route::get('/my-commands', [CommandController::class, 'myCommands'])
+            ->name('commands.my');
+    });
 
-Route::get('dashboard/burgers', function () {
-    return Inertia::render('burgers/Burger');
-})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
+    // Admin routes
+    Route::middleware('checkrole:admin')->group(function () {
+        Route::get('dashboard', function () {
+            return Inertia::render('Dashboard');
+        })->name('dashboard');
 
-//Route::get('dashboard/burgers/add', function () {
-//    return Inertia::render('Burgers/addBurger');
-//})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
-//
-//Route::get('dashboard/burgers/list', function () {
-//    return Inertia::render('Burgers/listBurger');
-//})->middleware(['auth', RoleMiddleware::class,'verified'])->name('dashboard_burgers');
+        Route::get('dashboard/burgers', function () {
+            return Inertia::render('burgers/Burger');
+        })->name('dashboard_burgers');
 
+        // Burger management
+        Route::post('/burgers', [burgerController::class, 'store'])
+            ->name('storeBurger');
+        Route::put('/burgers/{id}', [burgerController::class, 'update'])
+            ->name('burgers.update');
+        Route::delete('/burgers/{id}', [burgerController::class, 'destroy'])
+            ->name('burgers.destroy');
+
+        // Payment management
+        Route::get('/dashboard/payments', [PaymentController::class, 'index'])
+            ->name('payments.index');
+        Route::post('/payments', [PaymentController::class, 'store'])
+            ->name('payments.store');
+        Route::put('/payments/{payment}', [PaymentController::class, 'update'])
+            ->name('payments.update');
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])
+            ->name('payments.destroy');
+
+        // API route for refreshing payments list
+        Route::get('/api/payments', [PaymentController::class, 'getAll'])
+            ->name('api.payments.all');
+
+        // Command management for admin
+        Route::get('/dashboard/commands', [CommandController::class, 'index'])
+            ->name('commands.index');
+        Route::put('/commands/{command}', [CommandController::class, 'update'])
+            ->name('commands.update');
+        Route::delete('/commands/{command}', [CommandController::class, 'destroy'])
+            ->name('commands.destroy');
+    });
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

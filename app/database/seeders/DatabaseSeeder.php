@@ -13,19 +13,32 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-         User::factory(10)->create();
+        // First run roles and permissions seeder
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+            BurgerSeeder::class,
+        ]);
 
-        User::factory()->create([
-            'name' => 'Test User',
+        // Create test users with roles
+        $testAdmin = User::create([
+            'name' => 'Test Admin',
             'email' => 'test@example.com',
-            'role' => 'client',
-            'password'=>'passer123'
+            'password' => bcrypt('passer123'),
+            'role' => 'admin'
         ]);
-        User::factory()->create([
-            'name' => 'Test User',
+        $testAdmin->assignRole('admin');
+
+        $testClient = User::create([
+            'name' => 'Test Client',
             'email' => 'testclient@example.com',
-            'role' => 'admin',
-            'password'=>'passer123'
+            'password' => bcrypt('passer123'),
+            'role' => 'client'
         ]);
+        $testClient->assignRole('client');
+
+        // Create additional users and assign them the client role
+        User::factory(10)->create()->each(function ($user) {
+            $user->assignRole('client');
+        });
     }
 }

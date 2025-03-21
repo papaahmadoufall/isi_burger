@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Burger;
+use Illuminate\Support\Facades\Storage;
 
 class burgerController extends Controller
 {
@@ -26,9 +27,15 @@ class burgerController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric',
             'description' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'stock' => 'required|numeric',
         ]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('burgers', 'public');
+            $validatedData['image'] = Storage::url($imagePath);
+        }
 
         $burger = Burger::create($validatedData);
         return response()->json(['message' => 'Burger ajouté avec succès', 'burger' => $burger], 201);
@@ -60,11 +67,22 @@ class burgerController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'price' => 'sometimes|required|numeric',
             'description' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
             'stock' => 'sometimes|required|numeric',
         ]);
 
         $burger = Burger::findOrFail($id);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($burger->image) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $burger->image));
+            }
+            $imagePath = $request->file('image')->store('burgers', 'public');
+            $validatedData['image'] = Storage::url($imagePath);
+        }
+
         $burger->update($validatedData);
 
         return response()->json(['message' => 'Burger mis à jour avec succès', 'burger' => $burger], 200);
@@ -79,6 +97,12 @@ class burgerController extends Controller
 //        }
 
         $burger = Burger::findOrFail($id);
+        
+        // Delete image if exists
+        if ($burger->image) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $burger->image));
+        }
+        
         $burger->delete();
 
         return response()->json(['message' => 'Burger supprimé avec succès'], 200);
