@@ -7,31 +7,33 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class command extends Model
+class Command extends Model
 {
     use HasFactory;
-    protected $table = 'command';
+
+    protected $table = 'commands';
+
     protected $fillable = [
         'user_id',
-        'payment_id',
-        'statut',
-        'total',
-
+        'total_amount',
+        'status'
     ];
-    public function client() : BelongsTo
+
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
+    }
+
+    public function burgers()
+    {
+        return $this->belongsToMany(Burger::class, 'command_burger')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 
     // Commande has one paiement
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class, 'payment_id');
-    }
-
-    // Commande has multiple burgers through a pivot table
-    public function burgers(): BelongsToMany
-    {
-        return $this->belongsToMany(Burger::class, 'burger')->withPivot('quantite')->withTimestamps();
     }
 }

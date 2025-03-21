@@ -79,6 +79,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('commands.update');
         Route::delete('/commands/{command}', [CommandController::class, 'destroy'])
             ->name('commands.destroy');
+
+        // API route for refreshing commands list
+        Route::get('/api/commands', [CommandController::class, 'getAll'])
+            ->name('api.commands.all');
     });
 });
 

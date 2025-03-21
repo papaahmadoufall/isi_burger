@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
         // First run roles and permissions seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
-            BurgerSeeder::class,
         ]);
 
         // Create test users with roles
@@ -40,5 +39,11 @@ class DatabaseSeeder extends Seeder
         User::factory(10)->create()->each(function ($user) {
             $user->assignRole('client');
         });
+
+        // Then seed burgers and commands
+        $this->call([
+            BurgerSeeder::class,
+            CommandSeeder::class,
+        ]);
     }
 }
